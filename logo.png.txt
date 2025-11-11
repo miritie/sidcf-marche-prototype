@@ -1,0 +1,6 @@
+Pour ajouter votre logo:
+1. Remplacez ce fichier par votre fichier logo.png
+2. Le logo doit être au format PNG, dimensions recommandées: 200x200px
+3. Le nom du fichier doit être exactement: logo.png
+
+En attendant, un logo SVG par défaut est utilisé automatiquement.

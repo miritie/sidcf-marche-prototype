@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Module Marchés - SID-CF</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="./assets/css/variables.css">
+  <link rel="stylesheet" href="./assets/css/base.css">
+  <link rel="stylesheet" href="./assets/css/components.css">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="./assets/img/logo.png">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="app-header-left">
+        <a href="index.html" class="app-logo">
+          <img src="./assets/img/logo.png" alt="Logo SID-CF" id="appLogo">
+          <div>
+            <div class="app-logo-text">SID-CF</div>
+            <span class="app-logo-subtitle">Module Marchés</span>
+          </div>
+        </a>
+      </div>
+      
+      <div class="app-header-right">
+        <div class="user-info">
+          <div>
+            <div class="user-name" id="userName">Jean KOUASSI</div>
+            <div class="user-role" id="userRole">Administrateur</div>
+          </div>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="handleLogout()">
+          Déconnexion
+        </button>
+      </div>
+    </header>
+    
+    <!-- Navigation -->
+    <nav class="app-nav">
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="index.html" class="nav-link active">
+            📊 Tableau de bord
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="pages/planification/ecr-01c.html" class="nav-link">
+            📋 Marchés
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link" id="demandesLink">
+            📥 Demandes d'achat
+            <span class="badge">8</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            🧾 Bons de commande
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link" id="facturesLink">
+            📄 Factures
+            <span class="badge">0</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            💰 Paiements
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            📃 Contrats
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="pages/parametrage/index.html" class="nav-link">
+            ⚙️ Paramètres
+          </a>
+        </li>
+      </ul>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="app-main">
+      <h1 class="page-title">Gestion des Marchés Publics</h1>
+      
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <div class="stat-card warning">
+          <div class="stat-label">En attente visa</div>
+          <div class="stat-value" id="statEnAttente">-</div>
+        </div>
+        
+        <div class="stat-card info">
+          <div class="stat-label">En validation</div>
+          <div class="stat-value" id="statEnValidation">-</div>
+        </div>
+        
+        <div class="stat-card success">
+          <div class="stat-label">Approuvés</div>
+          <div class="stat-value" id="statApprouves">-</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-label">Montant total</div>
+          <div class="stat-value" id="statMontantTotal">-</div>
+        </div>
+      </div>
+      
+      <!-- Filters & Actions -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Liste des Marchés</h2>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="handleNouveauMarche()">
+              ➕ Nouveau marché
+            </button>
+            <button class="btn btn-secondary" onclick="handleImportPPM()">
+              📥 Importer PPM
+            </button>
+          </div>
+        </div>
+        
+        <div class="card-body">
+          <!-- Toolbar -->
+          <div class="toolbar">
+            <div class="toolbar-left">
+              <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  id="searchInput" 
+                  placeholder="Rechercher un marché..."
+                  onkeyup="handleSearch()"
+                >
+              </div>
+            </div>
+            
+            <div class="toolbar-right">
+              <div class="filters">
+                <select class="form-control" id="filterStatut" onchange="handleFilter()">
+                  <option value="">Tous les statuts</option>
+                  <option value="PLANIFIE">Planifié</option>
+                  <option value="EN_PASSATION">En passation</option>
+                  <option value="ATTENTE_VISA">Attente visa CF</option>
+                  <option value="VISE">Visé</option>
+                  <option value="RESERVE">Réservé</option>
+                  <option value="REFUSE">Refusé</option>
+                  <option value="EN_EXECUTION">En exécution</option>
+                  <option value="RESILIE">Résilié</option>
+                  <option value="CLOS">Clos</option>
+                </select>
+                
+                <select class="form-control" id="filterExercice" onchange="handleFilter()">
+                  <option value="">Tous les exercices</option>
+                  <option value="2024" selected>2024</option>
+                  <option value="2025">2025</option>
+                </select>
+                
+                <select class="form-control" id="filterType" onchange="handleFilter()">
+                  <option value="">Tous les types</option>
+                  <option value="TRAVAUX">Travaux</option>
+                  <option value="FOURNITURES">Fournitures</option>
+                  <option value="SERVICES">Services</option>
+                  <option value="PI">Prestations Intellectuelles</option>
+                </select>
+              </div>
+              
+              <button class="btn btn-secondary btn-sm" onclick="handleExport()">
+                📊 Exporter
+              </button>
+            </div>
+          </div>
+          
+          <!-- Table -->
+          <div class="table-container">
+            <table class="table" id="marchesTable">
+              <thead>
+                <tr>
+                  <th>N° Marché</th>
+                  <th>Intitulé</th>
+                  <th>Type</th>
+                  <th>Mode</th>
+                  <th>Montant</th>
+                  <th>Statut</th>
+                  <th>Priorité</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="marchesTableBody">
+                <tr>
+                  <td colspan="8" class="text-center">
+                    <div class="loading">
+                      <div class="spinner"></div>
+                      <div>Chargement des données...</div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- Pagination -->
+          <div class="pagination" id="pagination"></div>
+        </div>
+      </div>
+      
+      <!-- Alertes et notifications -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">🔔 Alertes et notifications</h2>
+        </div>
+        <div class="card-body" id="alertesContainer">
+          <p class="text-center text-secondary">Aucune alerte pour le moment</p>
+        </div>
+      </div>
+    </main>
+  </div>
+  
+  <!-- Scripts -->
+  <script src="./assets/js/config.js"></script>
+  <script src="./assets/data/referentiels.js"></script>
+  <script src="./assets/data/mock-data.js"></script>
+  <script src="./assets/js/utils.js"></script>
+  <script src="./assets/js/data-layer.js"></script>
+  <script src="./assets/js/validation.js"></script>
+  <script src="./assets/js/navigation.js"></script>
+  
+  <script>
+    // Variables globales
+    let currentFilters = {
+      search: '',
+      statut: '',
+      exercice: '2024',
+      type: ''
+    };
+    
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    
+    // Initialisation au chargement de la page
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Charger les données utilisateur
+      loadUserInfo();
+      
+      // Charger les statistiques
+      await loadStatistics();
+      
+      // Charger les marchés
+      await loadMarches();
+      
+      // Charger les alertes
+      loadAlertes();
+      
+      // Configurer le logo
+      configureLogo();
+    });
+    
+    // Charger les infos utilisateur
+    function loadUserInfo() {
+      const user = MOCK_DATA.currentUser;
+      document.getElementById('userName').textContent = `${user.prenoms} ${user.nom}`;
+      document.getElementById('userRole').textContent = ReferentielUtils.getLabel('roles', user.role);
+    }
+    
+    // Configurer le logo
+    function configureLogo() {
+      const logo = document.getElementById('appLogo');
+      if (logo) {
+        logo.src = APP_CONFIG.logo.path;
+        logo.alt = APP_CONFIG.logo.alt;
+        // Fallback si le logo n'existe pas
+        logo.onerror = function() {
+          this.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="%232d5f3f"/><text x="20" y="25" text-anchor="middle" fill="white" font-size="20" font-weight="bold">S</text></svg>';
+        };
+      }
+    }
+    
+    // Charger les statistiques
+    async function loadStatistics() {
+      const result = await dataLayer.getStatistics(currentFilters);
+      
+      if (result.success) {
+        const stats = result.data;
+        
+        document.getElementById('statEnAttente').textContent = stats.parStatut.ATTENTE_VISA || 0;
+        document.getElementById('statEnValidation').textContent = 
+          (stats.parStatut.EN_PASSATION || 0) + (stats.parStatut.RESERVE || 0);
+        document.getElementById('statApprouves').textContent = 
+          (stats.parStatut.VISE || 0) + (stats.parStatut.EN_EXECUTION || 0) + (stats.parStatut.CLOS || 0);
+        document.getElementById('statMontantTotal').textContent = 
+          Utils.formatMontant(stats.montantTotal);
+      }
+    }
+    
+    // Charger les marchés
+    async function loadMarches() {
+      const result = await dataLayer.search('marches', currentFilters);
+      
+      if (!result.success) {
+        Utils.showError('Erreur lors du chargement des marchés');
+        return;
+      }
+      
+      const marches = result.data;
+      displayMarches(marches);
+      updatePagination(marches.length);
+    }
+    
+    // Afficher les marchés dans le tableau
+    function displayMarches(marches) {
+      const tbody = document.getElementById('marchesTableBody');
+      
+      if (marches.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8">
+              <div class="empty-state">
+                <div class="empty-state-icon">📋</div>
+                <div class="empty-state-text">Aucun marché trouvé</div>
+                <p>Essayez de modifier vos filtres ou créez un nouveau marché</p>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+      
+      // Pagination
+      const start = (currentPage - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const pageMarches = marches.slice(start, end);
+      
+      tbody.innerHTML = pageMarches.map(marche => `
+        <tr>
+          <td>
+            <strong>${marche.numeroMarche}</strong>
+          </td>
+          <td>
+            <div style="max-width: 300px;">
+              ${marche.intitule}
+            </div>
+            <small class="text-secondary">${ReferentielUtils.getLabel('unitesOperationnelles', marche.uniteOperationnelle)}</small>
+          </td>
+          <td>
+            <span class="badge badge-secondary">${marche.typeMarche}</span>
+          </td>
+          <td>
+            <span class="badge badge-info">${marche.modePassation}</span>
+          </td>
+          <td>
+            ${Utils.formatMontant(marche.montantActuel || marche.montantInitial || marche.montantPrevisionnel)}
+          </td>
+          <td>
+            <span class="badge ${Utils.getStatutClass(marche.statut)}">
+              ${Utils.getStatutLabel(marche.statut)}
+            </span>
+          </td>
+          <td>
+            <span class="badge ${Utils.getPrioriteClass(marche.priorite)}">
+              ${marche.priorite}
+            </span>
+          </td>
+          <td>
+            <div class="btn-group">
+              <button class="btn btn-primary btn-sm" onclick="handleVoirMarche('${marche.id}')" title="Voir">
+                👁️
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="handleModifierMarche('${marche.id}')" title="Modifier">
+                ✏️
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+    
+    // Mise à jour de la pagination
+    function updatePagination(totalItems) {
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+      const container = document.getElementById('pagination');
+      
+      if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+      }
+      
+      let html = `
+        <button class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(${currentPage - 1})">
+          ‹ Précédent
+        </button>
+      `;
+      
+      for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+          html += `
+            <button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">
+              ${i}
+            </button>
+          `;
+        } else if (i === currentPage - 3 || i === currentPage + 3) {
+          html += `<span class="pagination-btn" disabled>...</span>`;
+        }
+      }
+      
+      html += `
+        <button class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${currentPage + 1})">
+          Suivant ›
+        </button>
+      `;
+      
+      container.innerHTML = html;
+    }
+    
+    // Changer de page
+    function changePage(page) {
+      currentPage = page;
+      loadMarches();
+    }
+    
+    // Gérer la recherche
+    function handleSearch() {
+      const searchValue = document.getElementById('searchInput').value;
+      currentFilters.search = searchValue;
+      currentPage = 1;
+      loadMarches();
+    }
+    
+    // Gérer les filtres
+    function handleFilter() {
+      currentFilters.statut = document.getElementById('filterStatut').value;
+      currentFilters.exercice = document.getElementById('filterExercice').value;
+      currentFilters.type = document.getElementById('filterType').value;
+      currentPage = 1;
+      loadMarches();
+      loadStatistics();
+    }
+    
+    // Charger les alertes
+    function loadAlertes() {
+      const container = document.getElementById('alertesContainer');
+      const marches = MOCK_DATA.marches;
+      
+      const alertes = [];
+      
+      marches.forEach(marche => {
+        // Vérifier les retards
+        if (marche.statut === 'VISE' && !marche.ordreService) {
+          const retard = Utils.checkRetard('OS_AFTER_VISA', { dateVisaCF: marche.dateVisaCF });
+          if (retard) {
+            alertes.push({
+              type: 'warning',
+              marche: marche.numeroMarche,
+              message: retard.message
+            });
+          }
+        }
+        
+        // Vérifier les avenants
+        if (marche.avenants && marche.avenants.length > 0) {
+          const check = Utils.checkSeuilAvenant(marche.montantInitial, marche.avenants);
+          if (check.depasseAlerte || check.depasseSeuil) {
+            alertes.push({
+              type: check.depasseSeuil ? 'danger' : 'warning',
+              marche: marche.numeroMarche,
+              message: check.message
+            });
+          }
+        }
+        
+        // Vérifier les recours
+        if (marche.recours && marche.recours.enCours) {
+          alertes.push({
+            type: 'info',
+            marche: marche.numeroMarche,
+            message: `Recours ${marche.recours.type} en cours`
+          });
+        }
+      });
+      
+      if (alertes.length === 0) {
+        container.innerHTML = '<p class="text-center text-secondary">Aucune alerte pour le moment</p>';
+        return;
+      }
+      
+      container.innerHTML = alertes.map(alerte => `
+        <div class="alert alert-${alerte.type}">
+          <strong>${alerte.marche}</strong>: ${alerte.message}
+        </div>
+      `).join('');
+    }
+    
+    // Actions
+    function handleNouveauMarche() {
+      Navigation.navigateTo('pages/planification/ecr-01b.html');
+    }
+    
+    function handleImportPPM() {
+      Navigation.navigateTo('pages/planification/ecr-01a.html');
+    }
+    
+    function handleVoirMarche(id) {
+      Navigation.navigateTo('pages/planification/ecr-01c.html', { marcheId: id, mode: 'view' });
+    }
+    
+    function handleModifierMarche(id) {
+      Navigation.navigateTo('pages/planification/ecr-01c.html', { marcheId: id, mode: 'edit' });
+    }
+    
+    function handleExport() {
+      dataLayer.search('marches', currentFilters).then(result => {
+        if (result.success) {
+          const exportData = result.data.map(m => ({
+            'N° Marché': m.numeroMarche,
+            'Intitulé': m.intitule,
+            'Type': m.typeMarche,
+            'Mode': m.modePassation,
+            'Montant': m.montantActuel || m.montantInitial || m.montantPrevisionnel,
+            'Statut': Utils.getStatutLabel(m.statut),
+            'Exercice': m.exercice,
+            'Unité': ReferentielUtils.getLabel('unitesOperationnelles', m.uniteOperationnelle)
+          }));
+          
+          Utils.exportToCSV(exportData, `marches_${new Date().toISOString().split('T')[0]}.csv`);
+          Utils.showSuccess('Export réussi');
+        }
+      });
+    }
+    
+    function handleLogout() {
+      if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+        // Redirection vers page de login (à implémenter)
+        window.location.href = 'index.html';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+# 🚀 DÉMARRAGE RAPIDE - SID-CF Module Marché
+
+## ⚡ Lancer immédiatement (3 étapes)
+
+### 1️⃣ Télécharger et extraire
+
+Vous avez déjà le fichier `sid-cf-marche.zip` !
+
+```bash
+# Extraire le fichier
+unzip sid-cf-marche.zip
+cd sid-cf-marche
+```
+
+### 2️⃣ Lancer un serveur local
+
+**Option A - Avec Python** (le plus simple):
+```bash
+python -m http.server 8000
+# ou
+python3 -m http.server 8000
+```
+
+**Option B - Avec Node.js**:
+```bash
+npx serve -p 8000
+```
+
+**Option C - Avec VS Code**:
+- Installer l'extension "Live Server"
+- Clic droit sur `index.html` → "Open with Live Server"
+
+### 3️⃣ Ouvrir dans le navigateur
+
+```
+http://localhost:8000
+```
+
+🎉 **C'est tout ! L'application fonctionne !**
+
+---
+
+## 🚀 Déployer en ligne (GitHub + Vercel)
+
+### Étape 1: GitHub
+
+```bash
+# Initialiser Git
+git init
+git add .
+git commit -m "Initial commit"
+
+# Créer le repository sur github.com/new
+# Puis:
+git remote add origin https://github.com/VOTRE-USERNAME/sid-cf-marche.git
+git branch -M main
+git push -u origin main
+```
+
+### Étape 2: Vercel (gratuit)
+
+1. Aller sur https://vercel.com/signup
+2. Se connecter avec GitHub
+3. Cliquer "New Project"
+4. Importer votre repository
+5. Cliquer "Deploy"
+
+✅ **Votre site est en ligne !** URL: `https://sid-cf-marche-xxxx.vercel.app`
+
+---
+
+## 🎨 Personnalisation rapide
+
+### Changer le logo
+
+1. Remplacer `assets/logo.svg` par votre logo
+2. Rafraîchir la page
+
+### Changer les couleurs
+
+Dans `css/styles.css`, ligne 1-15:
+
+```css
+:root {
+  --primary-green: #4a7c59;  /* Votre couleur */
+  --accent-orange: #f39c12;  /* Votre couleur */
+}
+```
+
+### Modifier les données
+
+Dans le dossier `data/`:
+- `referentiels.json` → Paramètres système
+- `marches.json` → Exemples de marchés
+- `ppm.json` → Données PPM
+
+---
+
+## 📖 Documentation complète
+
+Consultez les fichiers:
+- `README.md` → Documentation complète
+- `DEPLOIEMENT.md` → Guide de déploiement détaillé
+- `LOGO-GUIDE.md` → Personnalisation du logo
+- `CHANGELOG.md` → Historique des versions
+
+---
+
+## ✅ Fonctionnalités disponibles
+
+### ✨ Déjà implémenté:
+- ✅ Tableau de bord avec statistiques
+- ✅ Gestion complète des marchés
+- ✅ Import et gestion PPM
+- ✅ Demandes d'achat
+- ✅ Décisions du Contrôleur Financier
+- ✅ Suivi d'exécution (OS, décomptes, avenants)
+- ✅ Gestion des garanties
+- ✅ Rapports et exports
+- ✅ Paramétrage complet
+- ✅ Recherche et filtres
+- ✅ Design responsive
+
+### 🔜 Prochaines étapes (vous pouvez ajouter):
+- Authentification utilisateurs
+- Upload réel de fichiers
+- Génération PDF
+- Intégration Airtable
+- Notifications email
+
+---
+
+## 🆘 Problèmes fréquents
+
+### "Refused to connect" ou CORS error
+
+➡️ Vous devez utiliser un serveur local, pas ouvrir le fichier HTML directement.
+
+**Solution**: Utiliser Python, Node ou Live Server (voir étape 2)
+
+### Les données ne s'affichent pas
+
+➡️ Ouvrir la console (F12) et vérifier les erreurs
+
+**Solution**: Vérifier que les fichiers JSON dans `data/` sont valides
+
+### Le style ne se charge pas
+
+➡️ Vérifier les chemins des fichiers CSS et JS
+
+**Solution**: Tout doit être relatif au dossier racine
+
+---
+
+## 🎯 Prochaines actions recommandées
+
+1. ✅ Tester l'application localement
+2. ✅ Personnaliser le logo et les couleurs
+3. ✅ Adapter les données à votre contexte
+4. ✅ Déployer sur Vercel/Netlify
+5. ✅ Partager l'URL avec votre client
+6. ⚡ Itérer selon les retours
+
+---
+
+## 📞 Besoin d'aide ?
+
+- 📧 Email: [votre-email]
+- 💬 GitHub Issues
+- 📖 Consulter la documentation complète
+
+---
+
+**🎉 Bon développement avec SID-CF Module Marché !**
+
+Version 1.0.0 | Novembre 2024
