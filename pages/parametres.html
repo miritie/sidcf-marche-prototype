@@ -1,0 +1,139 @@
+<!-- Page Paramètres -->
+<div class="page-header">
+    <div class="breadcrumb">
+        <a href="#" onclick="App.loadPage('dashboard')">Accueil</a>
+        <span class="separator">/</span>
+        <span>Paramètres</span>
+    </div>
+    <h2>Paramètres du Système</h2>
+</div>
+
+<div class="card">
+    <div class="tabs">
+        <button class="tab active" onclick="showParamTab('general')">Général</button>
+        <button class="tab" onclick="showParamTab('categories')">Catégories</button>
+        <button class="tab" onclick="showParamTab('workflow')">Workflow</button>
+        <button class="tab" onclick="showParamTab('utilisateurs')">Utilisateurs</button>
+        <button class="tab" onclick="showParamTab('droits')">Droits d'accès</button>
+    </div>
+    
+    <div id="general-tab" class="tab-content active">
+        <h3>Paramètres Généraux</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 800px;">
+            <div class="form-group">
+                <label>Taux TVA (%)</label>
+                <input type="number" class="form-control" value="18">
+            </div>
+            <div class="form-group">
+                <label>Seuil de marché (FCFA)</label>
+                <input type="number" class="form-control" value="5000000">
+            </div>
+            <div class="form-group">
+                <label>Délai de paiement (jours)</label>
+                <input type="number" class="form-control" value="30">
+            </div>
+            <div class="form-group">
+                <label>Exercice fiscal</label>
+                <input type="number" class="form-control" value="2024">
+            </div>
+        </div>
+        <button class="btn btn-primary mt-3">💾 Enregistrer</button>
+    </div>
+    
+    <div id="categories-tab" class="tab-content">
+        <h3>Gestion des Catégories</h3>
+        <button class="btn btn-primary mb-3">➕ Nouvelle Catégorie</button>
+        <div class="tree-view">
+            <div>📁 Fournitures</div>
+            <div style="margin-left: 20px;">📄 Matériel informatique</div>
+            <div style="margin-left: 20px;">📄 Fournitures de bureau</div>
+            <div>📁 Services</div>
+            <div style="margin-left: 20px;">📄 Maintenance</div>
+            <div style="margin-left: 20px;">📄 Formation</div>
+        </div>
+    </div>
+    
+    <div id="workflow-tab" class="tab-content">
+        <h3>Configuration du Workflow</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Montant Min</th>
+                    <th>Montant Max</th>
+                    <th>Rôle Validateur</th>
+                    <th>Niveau</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>0</td>
+                    <td>1,000,000</td>
+                    <td>Gestionnaire</td>
+                    <td>1</td>
+                    <td><button class="btn btn-sm btn-secondary">Modifier</button></td>
+                </tr>
+                <tr>
+                    <td>1,000,000</td>
+                    <td>5,000,000</td>
+                    <td>Chef Service</td>
+                    <td>2</td>
+                    <td><button class="btn btn-sm btn-secondary">Modifier</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div id="utilisateurs-tab" class="tab-content">
+        <h3>Gestion des Utilisateurs</h3>
+        <button class="btn btn-primary mb-3">➕ Nouvel Utilisateur</button>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>Email</th>
+                    <th>Rôle</th>
+                    <th>Service</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="usersTableBody"></tbody>
+        </table>
+    </div>
+    
+    <div id="droits-tab" class="tab-content">
+        <h3>Gestion des Droits d'Accès</h3>
+        <p>Configuration des permissions par rôle</p>
+    </div>
+</div>
+
+<script>
+function showParamTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.getElementById(tab + '-tab').classList.add('active');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+function loadUsersTable() {
+    const users = db.tables.utilisateurs;
+    const tbody = document.getElementById('usersTableBody');
+    if (tbody) {
+        tbody.innerHTML = users.map(u => `
+            <tr>
+                <td>${u.nom} ${u.prenom}</td>
+                <td>${u.email}</td>
+                <td>${u.role}</td>
+                <td>${u.service}</td>
+                <td><span class="badge badge-success">Actif</span></td>
+                <td>
+                    <button class="btn btn-sm btn-secondary">Modifier</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+}
+
+loadUsersTable();
+</script>

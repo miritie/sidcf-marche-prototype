@@ -1,0 +1,88 @@
+<!-- Page Factures -->
+<div class="page-header">
+    <div class="breadcrumb">
+        <a href="#" onclick="App.loadPage('dashboard')">Accueil</a>
+        <span class="separator">/</span>
+        <span>Factures</span>
+    </div>
+    <h2>Gestion des Factures</h2>
+</div>
+
+<div class="card">
+    <div class="tabs">
+        <button class="tab active" onclick="showFactureTab('toutes')">Toutes les factures</button>
+        <button class="tab" onclick="showFactureTab('validation')">
+            En validation <span class="badge">5</span>
+        </button>
+        <button class="tab" onclick="showFactureTab('rejetees')">Rejetées</button>
+    </div>
+    
+    <div id="toutes-tab" class="tab-content active">
+        <div class="card-header">
+            <h3 class="card-title">Liste des Factures</h3>
+            <button class="btn btn-primary">➕ Nouvelle Facture</button>
+        </div>
+        <div class="card-body">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>N° Facture</th>
+                        <th>Date</th>
+                        <th>Fournisseur</th>
+                        <th>BC Associé</th>
+                        <th>Montant HT</th>
+                        <th>TVA</th>
+                        <th>Montant TTC</th>
+                        <th>Échéance</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="facturesTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div id="validation-tab" class="tab-content">
+        <div class="alert alert-warning">
+            5 factures en attente de validation
+        </div>
+    </div>
+    
+    <div id="rejetees-tab" class="tab-content">
+        <p>Factures rejetées</p>
+    </div>
+</div>
+
+<script>
+function loadFacturesTable() {
+    const factures = db.tables.factures;
+    const tbody = document.getElementById('facturesTableBody');
+    tbody.innerHTML = factures.map(f => `
+        <tr>
+            <td>${f.numeroFacture}</td>
+            <td>${App.formatDate(f.dateFacture)}</td>
+            <td>${f.fournisseur}</td>
+            <td>${f.bonCommandeId}</td>
+            <td>${App.formatMoney(f.montantHT)}</td>
+            <td>${App.formatMoney(f.montantTVA)}</td>
+            <td>${App.formatMoney(f.montantTTC)}</td>
+            <td>${App.formatDate(f.dateEcheance)}</td>
+            <td><span class="badge badge-${f.statut === 'Validée' ? 'success' : 'warning'}">${f.statut}</span></td>
+            <td>
+                <button class="btn btn-sm btn-info">👁️</button>
+                <button class="btn btn-sm btn-primary">✓</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function showFactureTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.getElementById(tab + '-tab').classList.add('active');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+loadFacturesTable();
+</script>

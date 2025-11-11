@@ -1,0 +1,67 @@
+<!-- Page Rapports -->
+<div class="page-header">
+    <div class="breadcrumb">
+        <a href="#" onclick="App.loadPage('dashboard')">Accueil</a>
+        <span class="separator">/</span>
+        <span>Rapports</span>
+    </div>
+    <h2>Rapports et Analyses</h2>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header">
+        <h3 class="card-title">Générer un Rapport</h3>
+    </div>
+    <div class="card-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 16px;">
+            <div class="form-group">
+                <label>Type de Rapport</label>
+                <select class="form-control" id="reportType">
+                    <option value="">-- Sélectionner --</option>
+                    <option value="execution">Rapport d'exécution</option>
+                    <option value="fournisseurs">Analyse fournisseurs</option>
+                    <option value="budget">Suivi budgétaire</option>
+                    <option value="paiements">État des paiements</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Date Début</label>
+                <input type="date" class="form-control" id="dateDebut">
+            </div>
+            <div class="form-group">
+                <label>Date Fin</label>
+                <input type="date" class="form-control" id="dateFin">
+            </div>
+            <div class="form-group" style="align-self: end;">
+                <button class="btn btn-primary" onclick="generateReport()">
+                    📊 Générer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card" id="reportResult" style="display: none;">
+    <div class="card-header">
+        <h3 class="card-title">Résultats du Rapport</h3>
+        <div>
+            <button class="btn btn-secondary">📥 Export PDF</button>
+            <button class="btn btn-secondary">📥 Export Excel</button>
+        </div>
+    </div>
+    <div class="card-body">
+        <canvas id="reportChart"></canvas>
+    </div>
+</div>
+
+<script>
+function generateReport() {
+    const type = document.getElementById('reportType').value;
+    if (!type) {
+        App.showNotification('Sélectionnez un type de rapport', 'warning');
+        return;
+    }
+    document.getElementById('reportResult').style.display = 'block';
+    App.showNotification('Rapport généré avec succès', 'success');
+}
+</script>

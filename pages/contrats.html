@@ -1,0 +1,61 @@
+<!-- Page Contrats -->
+<div class="page-header">
+    <div class="breadcrumb">
+        <a href="#" onclick="App.loadPage('dashboard')">Accueil</a>
+        <span class="separator">/</span>
+        <span>Contrats</span>
+    </div>
+    <h2>Gestion des Contrats</h2>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Liste des Contrats</h3>
+        <button class="btn btn-primary">➕ Nouveau Contrat</button>
+    </div>
+    <div class="card-body">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>N° Contrat</th>
+                    <th>Marché</th>
+                    <th>Objet</th>
+                    <th>Montant</th>
+                    <th>Date Signature</th>
+                    <th>Durée</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="contratsTableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function loadContratsTable() {
+    const contrats = db.tables.contrats || [];
+    const tbody = document.getElementById('contratsTableBody');
+    tbody.innerHTML = contrats.map(c => `
+        <tr>
+            <td>${c.numero}</td>
+            <td>${c.marche}</td>
+            <td>${c.objet}</td>
+            <td>${App.formatMoney(c.montant)}</td>
+            <td>${App.formatDate(c.dateSignature)}</td>
+            <td>${c.duree}</td>
+            <td><span class="badge badge-success">${c.statut}</span></td>
+            <td>
+                <button class="btn btn-sm btn-info">👁️</button>
+                <button class="btn btn-sm btn-secondary">📥</button>
+            </td>
+        </tr>
+    `).join('');
+    
+    if (contrats.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">Aucun contrat</td></tr>';
+    }
+}
+
+loadContratsTable();
+</script>

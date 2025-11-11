@@ -1,0 +1,64 @@
+<!-- Page Bons de Commande -->
+<div class="page-header">
+    <div class="breadcrumb">
+        <a href="#" onclick="App.loadPage('dashboard')">Accueil</a>
+        <span class="separator">/</span>
+        <span>Bons de Commande</span>
+    </div>
+    <h2>Gestion des Bons de Commande</h2>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Liste des Bons de Commande</h3>
+        <button class="btn btn-primary" onclick="openBCModal()">➕ Nouveau BC</button>
+    </div>
+    <div class="card-body">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>N° BC</th>
+                        <th>Date</th>
+                        <th>Marché</th>
+                        <th>Fournisseur</th>
+                        <th>Montant TTC</th>
+                        <th>Livraison Prévue</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="bcTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadBCTable() {
+    const bcs = db.tables.bonsCommande;
+    const tbody = document.getElementById('bcTableBody');
+    tbody.innerHTML = bcs.map(bc => `
+        <tr>
+            <td>${bc.numeroBC}</td>
+            <td>${App.formatDate(bc.dateCommande)}</td>
+            <td>${bc.marcheId}</td>
+            <td>${bc.fournisseur}</td>
+            <td>${App.formatMoney(bc.montantTTC)}</td>
+            <td>${App.formatDate(bc.dateLivraisonPrevue)}</td>
+            <td><span class="badge badge-${bc.statut === 'Livré' ? 'success' : 'warning'}">${bc.statut}</span></td>
+            <td>
+                <button class="btn btn-sm btn-info">👁️</button>
+                <button class="btn btn-sm btn-secondary">📥</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function openBCModal() {
+    alert('Modal BC à implémenter');
+}
+
+// Charger au démarrage
+loadBCTable();
+</script>

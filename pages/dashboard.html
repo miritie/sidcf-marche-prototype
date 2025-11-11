@@ -1,0 +1,398 @@
+<!-- Dashboard - Tableau de bord principal -->
+<div class="page-header">
+    <div class="breadcrumb">
+        <span>Accueil</span>
+        <span class="separator">/</span>
+        <span>Tableau de bord</span>
+    </div>
+    <h2>Tableau de bord</h2>
+</div>
+
+<!-- Statistiques principales -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Marchés Actifs</div>
+        <div class="stat-value" id="stat-marches">0</div>
+        <div class="stat-change positive">
+            <span>↑</span> +12% ce mois
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-label">Montant Total Engagé</div>
+        <div class="stat-value" id="stat-montant">0 FCFA</div>
+        <div class="stat-change positive">
+            <span>↑</span> +5% ce trimestre
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-label">Fournisseurs Actifs</div>
+        <div class="stat-value" id="stat-fournisseurs">0</div>
+        <div class="stat-change negative">
+            <span>↓</span> -3% ce mois
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-label">Taux d'Exécution</div>
+        <div class="stat-value" id="stat-execution">0%</div>
+        <div class="stat-change positive">
+            <span>↑</span> +2% ce mois
+        </div>
+    </div>
+</div>
+
+<!-- Alertes et notifications -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <span>⚠️</span> Alertes et Notifications
+        </h3>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning">
+            <span>⏰</span>
+            <span>3 marchés arrivent à expiration dans les 30 prochains jours</span>
+        </div>
+        <div class="alert alert-info">
+            <span>📄</span>
+            <span>5 factures en attente de validation</span>
+        </div>
+        <div class="alert alert-success">
+            <span>✅</span>
+            <span>2 paiements effectués aujourd'hui pour un montant total de 12.5M FCFA</span>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+    <!-- Graphique des marchés par type -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <span>📊</span> Répartition des marchés par type
+            </h3>
+        </div>
+        <div class="card-body">
+            <canvas id="chartTypes" width="400" height="300"></canvas>
+        </div>
+    </div>
+    
+    <!-- Graphique évolution mensuelle -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <span>📈</span> Évolution mensuelle des dépenses
+            </h3>
+        </div>
+        <div class="card-body">
+            <canvas id="chartEvolution" width="400" height="300"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Dernières activités -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <span>🕒</span> Dernières activités
+        </h3>
+    </div>
+    <div class="card-body">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date/Heure</th>
+                        <th>Utilisateur</th>
+                        <th>Action</th>
+                        <th>Entité</th>
+                        <th>Détails</th>
+                    </tr>
+                </thead>
+                <tbody id="activitiesTable">
+                    <!-- Sera rempli dynamiquement -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Marchés expirant bientôt -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <span>⏳</span> Marchés expirant dans les 30 prochains jours
+        </h3>
+    </div>
+    <div class="card-body">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Code Marché</th>
+                        <th>Intitulé</th>
+                        <th>Fournisseur</th>
+                        <th>Date Expiration</th>
+                        <th>Jours Restants</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="expiringMarchesTable">
+                    <!-- Sera rempli dynamiquement -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+// Fonction d'initialisation du dashboard
+function initializeDashboard() {
+    // Charger les statistiques
+    loadDashboardStats();
+    
+    // Charger les activités récentes
+    loadRecentActivities();
+    
+    // Charger les marchés expirant
+    loadExpiringMarches();
+    
+    // Initialiser les graphiques
+    initializeDashboardCharts();
+}
+
+function loadDashboardStats() {
+    const stats = db.getStatistiques();
+    
+    document.getElementById('stat-marches').textContent = stats.marchesActifs;
+    document.getElementById('stat-montant').textContent = App.formatMoney(stats.montantTotalEngagé);
+    document.getElementById('stat-fournisseurs').textContent = stats.fournisseursActifs;
+    document.getElementById('stat-execution').textContent = stats.tauxExecution + '%';
+}
+
+function loadRecentActivities() {
+    const activities = db.tables.historique
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 10);
+    
+    const tbody = document.getElementById('activitiesTable');
+    tbody.innerHTML = '';
+    
+    activities.forEach(activity => {
+        const user = db.tables.utilisateurs.find(u => u.id === activity.utilisateur);
+        const row = `
+            <tr>
+                <td>${App.formatDateTime(activity.date)}</td>
+                <td>${user ? user.prenom + ' ' + user.nom : activity.utilisateur}</td>
+                <td><span class="badge badge-primary">${activity.action}</span></td>
+                <td>${activity.entite}</td>
+                <td>${activity.details}</td>
+            </tr>
+        `;
+        tbody.innerHTML += row;
+    });
+}
+
+function loadExpiringMarches() {
+    const today = new Date();
+    const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
+    
+    const expiringMarches = db.tables.marches.filter(marche => {
+        const dateFin = new Date(marche.dateFin);
+        return dateFin <= thirtyDaysFromNow && dateFin >= today && marche.statut === 'Actif';
+    });
+    
+    const tbody = document.getElementById('expiringMarchesTable');
+    tbody.innerHTML = '';
+    
+    expiringMarches.forEach(marche => {
+        const dateFin = new Date(marche.dateFin);
+        const joursRestants = Math.ceil((dateFin - today) / (24 * 60 * 60 * 1000));
+        
+        const row = `
+            <tr>
+                <td>${marche.codeMarche}</td>
+                <td>${marche.intitule}</td>
+                <td>${marche.fournisseur}</td>
+                <td>${App.formatDate(marche.dateFin)}</td>
+                <td>
+                    <span class="badge ${joursRestants <= 7 ? 'badge-danger' : joursRestants <= 15 ? 'badge-warning' : 'badge-info'}">
+                        ${joursRestants} jours
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="App.loadPage('marches'); viewMarche('${marche.id}')">
+                        Voir
+                    </button>
+                </td>
+            </tr>
+        `;
+        tbody.innerHTML += row;
+    });
+    
+    if (expiringMarches.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Aucun marché n\'expire dans les 30 prochains jours</td></tr>';
+    }
+}
+
+function initializeDashboardCharts() {
+    // Graphique des types de marchés
+    const canvasTypes = document.getElementById('chartTypes');
+    if (canvasTypes) {
+        drawPieChart(canvasTypes);
+    }
+    
+    // Graphique d'évolution
+    const canvasEvolution = document.getElementById('chartEvolution');
+    if (canvasEvolution) {
+        drawLineChart(canvasEvolution);
+    }
+}
+
+function drawPieChart(canvas) {
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width = 400;
+    const height = canvas.height = 300;
+    
+    // Compter les marchés par type
+    const typeCount = {};
+    db.tables.marches.forEach(marche => {
+        if (marche.statut === 'Actif') {
+            typeCount[marche.type] = (typeCount[marche.type] || 0) + 1;
+        }
+    });
+    
+    // Préparer les données
+    const data = [];
+    const colors = ['#2C5F2D', '#FF8C00', '#4CAF50', '#FFC107', '#17A2B8'];
+    let colorIndex = 0;
+    
+    for (const [type, count] of Object.entries(typeCount)) {
+        const typeInfo = CONFIG.typesMarche.find(t => t.code === type);
+        data.push({
+            label: typeInfo ? typeInfo.libelle : type,
+            value: count,
+            color: colors[colorIndex++ % colors.length]
+        });
+    }
+    
+    if (data.length === 0) {
+        ctx.fillStyle = '#757575';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Aucune donnée disponible', width / 2, height / 2);
+        return;
+    }
+    
+    // Dessiner le graphique
+    const total = data.reduce((sum, item) => sum + item.value, 0);
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = Math.min(width, height) / 3;
+    
+    let currentAngle = -Math.PI / 2;
+    
+    data.forEach((item, index) => {
+        const sliceAngle = (item.value / total) * 2 * Math.PI;
+        
+        // Dessiner la part
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+        ctx.lineTo(centerX, centerY);
+        ctx.fillStyle = item.color;
+        ctx.fill();
+        
+        // Dessiner le label
+        const labelX = centerX + Math.cos(currentAngle + sliceAngle / 2) * (radius + 30);
+        const labelY = centerY + Math.sin(currentAngle + sliceAngle / 2) * (radius + 30);
+        
+        ctx.fillStyle = '#333';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(item.label, labelX, labelY);
+        ctx.fillText(`${item.value} (${Math.round(item.value / total * 100)}%)`, labelX, labelY + 15);
+        
+        currentAngle += sliceAngle;
+    });
+}
+
+function drawLineChart(canvas) {
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width = 400;
+    const height = canvas.height = 300;
+    
+    // Données d'exemple pour les 6 derniers mois
+    const data = [
+        { month: 'Août', value: 12500000 },
+        { month: 'Sept', value: 18200000 },
+        { month: 'Oct', value: 15800000 },
+        { month: 'Nov', value: 22100000 },
+        { month: 'Déc', value: 19700000 },
+        { month: 'Jan', value: 25000000 }
+    ];
+    
+    // Effacer le canvas
+    ctx.clearRect(0, 0, width, height);
+    
+    // Dessiner les axes
+    ctx.beginPath();
+    ctx.moveTo(40, 10);
+    ctx.lineTo(40, height - 30);
+    ctx.lineTo(width - 10, height - 30);
+    ctx.strokeStyle = '#E0E0E0';
+    ctx.stroke();
+    
+    // Dessiner la grille
+    for (let i = 1; i <= 5; i++) {
+        const y = (height - 40) * (i / 5) + 10;
+        ctx.beginPath();
+        ctx.moveTo(40, y);
+        ctx.lineTo(width - 10, y);
+        ctx.strokeStyle = '#F0F0F0';
+        ctx.stroke();
+    }
+    
+    // Dessiner la ligne
+    const maxValue = Math.max(...data.map(d => d.value));
+    const pointSpacing = (width - 50) / (data.length - 1);
+    
+    ctx.beginPath();
+    ctx.strokeStyle = '#2C5F2D';
+    ctx.lineWidth = 2;
+    
+    data.forEach((item, index) => {
+        const x = 40 + index * pointSpacing;
+        const y = height - 30 - (item.value / maxValue) * (height - 60);
+        
+        if (index === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+        
+        // Dessiner le point
+        ctx.fillStyle = '#FF8C00';
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Dessiner le label
+        ctx.fillStyle = '#333';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(item.month, x, height - 10);
+        
+        // Afficher la valeur
+        ctx.save();
+        ctx.translate(x, y - 10);
+        ctx.rotate(-Math.PI / 6);
+        ctx.font = '10px sans-serif';
+        ctx.fillText(App.formatMoney(item.value), 0, 0);
+        ctx.restore();
+    });
+    
+    ctx.stroke();
+}
+</script>

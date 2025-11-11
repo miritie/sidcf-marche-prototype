@@ -1,0 +1,70 @@
+<!-- Page Demandes d'Achat -->
+<div class="page-header">
+    <div class="breadcrumb">
+        <a href="#" onclick="App.loadPage('dashboard')">Accueil</a>
+        <span class="separator">/</span>
+        <span>Demandes d'Achat</span>
+    </div>
+    <h2>Gestion des Demandes d'Achat</h2>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">En attente</div>
+        <div class="stat-value">8</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">En validation</div>
+        <div class="stat-value">3</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Approuvées</div>
+        <div class="stat-value">15</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Montant total</div>
+        <div class="stat-value">45M FCFA</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Liste des Demandes d'Achat</h3>
+        <button class="btn btn-primary" onclick="openDemandeModal()">➕ Nouvelle Demande</button>
+    </div>
+    <div class="card-body">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>N° Demande</th>
+                    <th>Date</th>
+                    <th>Service</th>
+                    <th>Priorité</th>
+                    <th>Montant Estimé</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="demandesTableBody">
+                <tr>
+                    <td>DA2024-001</td>
+                    <td>15/01/2024</td>
+                    <td>Service Informatique</td>
+                    <td><span class="badge badge-danger">Haute</span></td>
+                    <td>25,000,000 FCFA</td>
+                    <td><span class="badge badge-success">Approuvée</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-info">Voir</button>
+                        <button class="btn btn-sm btn-secondary">Transformer</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function openDemandeModal() {
+    alert('Modal demande d'achat à implémenter');
+}
+</script>
