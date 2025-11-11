@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SI-DCF - Module Marché</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@heroicons/react@2/dist/index.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useCallback } = React;
+
+        // Icons simplifié (fallback text)
+        const Icon = ({ name, size = 'w-5 h-5', className = '' }) => {
+          const icons = {
+            'menu': '☰', 'home': '⌂', 'briefcase': '💼', 'chart': '📊', 'file': '📄',
+            'settings': '⚙️', 'alert': '⚠️', 'check': '✓', 'x': '✕', 'arrow-left': '←',
+            'chevron-right': '→', 'search': '🔍', 'download': '⬇', 'plus': '➕',
+            'eye': '👁', 'dollar': '$', 'clock': '🕐', 'users': '👥', 'trending': '📈',
+            'logout': '🚪', 'info': 'ⓘ', 'file-text': '📝'
+          };
+          return <span style={{ fontSize: '1.2em' }}>{icons[name] || name}</span>;
+        };
+
+        const SIDCFModule = () => {
+          const [currentPage, setCurrentPage] = useState('home');
+          const [selectedMarche, setSelectedMarche] = useState(null);
+          const [sidebarOpen, setSidebarOpen] = useState(true);
+          
+          const [searchMarche, setSearchMarche] = useState('');
+          const [filterEtat, setFilterEtat] = useState('');
+          const [filterType, setFilterType] = useState('');
+          const [filterUnite, setFilterUnite] = useState('');
+          const [filterBailleur, setFilterBailleur] = useState('');
+
+          const parametrage = {
+            unites: [
+              { id: 1, code: 'MIN-SANTE', libelle: 'Ministère de la Santé', actif: true },
+              { id: 2, code: 'DCF', libelle: 'Direction de la Comptabilité Financière', actif: true },
+              { id: 3, code: 'DGBF', libelle: 'Direction Générale du Budget', actif: true },
+              { id: 4, code: 'DG-PLAN', libelle: 'Direction Planification', actif: true }
+            ],
+            typesMarchés: [
+              { id: 1, code: 'TRAVAUX', libelle: 'Travaux', actif: true },
+              { id: 2, code: 'FOURN', libelle: 'Fournitures', actif: true },
+              { id: 3, code: 'SERV', libelle: 'Services', actif: true },
+              { id: 4, code: 'PI', libelle: 'Prestations Intellectuelles', actif: true }
+            ],
+            modePassation: [
+              { id: 1, code: 'AOO', libelle: 'Appel d\'Offres Ouvert', actif: true },
+              { id: 2, code: 'AOR', libelle: 'Appel d\'Offres Restreint', actif: true },
+              { id: 3, code: 'PSC', libelle: 'Procédure Simplifiée Concurrentielle', actif: true },
+              { id: 4, code: 'PSD', libelle: 'Procédure Simplifiée Directe', actif: true },
+              { id: 5, code: 'GRE', libelle: 'Gré à gré', actif: true }
+            ],
+            bailleurs: [
+              { id: 1, code: 'ETAT', libelle: 'État', actif: true },
+              { id: 2, code: 'BM', libelle: 'Banque Mondiale', actif: true },
+              { id: 3, code: 'BAD', libelle: 'Banque Africaine', actif: true },
+              { id: 4, code: 'UE', libelle: 'Union Européenne', actif: true }
+            ],
+            etatsMarche: [
+              { code: 'PLANIFIE', libelle: 'Planifié', couleur: '#DBEAFE', txtColor: '#1E40AF' },
+              { code: 'EN_PROC', libelle: 'En Procédure', couleur: '#FEF3C7', txtColor: '#92400E' },
+              { code: 'ATTRIBUE', libelle: 'Attribué', couleur: '#E9D5FF', txtColor: '#5B21B6' },
+              { code: 'VISE', libelle: 'Visé', couleur: '#E0E7FF', txtColor: '#312E81' },
+              { code: 'EXECUTION', libelle: 'Exécution', couleur: '#DCFCE7', txtColor: '#15803D' },
+              { code: 'CLOS', libelle: 'Clôturé', couleur: '#F3F4F6', txtColor: '#374151' },
+              { code: 'RESILIE', libelle: 'Résilié', couleur: '#FEE2E2', txtColor: '#991B1B' }
+            ],
+            reglesGestion: {
+              seuil_cumul: { val: 30, sev: 'BLOCANT', desc: 'Seuil cumul avenants (%)' },
+              taux_avance: { val: 15, sev: 'BLOCANT', desc: 'Taux max avance (%)' },
+              taux_retenue: { val: 10, sev: 'AVERT', desc: 'Taux max retenue garantie (%)' },
+              delai_os: { val: 30, sev: 'BLOCANT', desc: 'Délai max OS après visa (jours)' }
+            }
+          };
+
+          const [marches] = useState([
+            {
+              id: 'M001', code: 'M-2024-001', titre: 'Construction Centre de Santé - Abidjan',
+              type: 'TRAVAUX', unite: 'MIN-SANTE', etat: 'EXECUTION', bailleur: 'BM',
+              montantAPM: 850000000, montantEngagement: 850000000, montantOrdonance: 620000000, montantPaiement: 580000000,
+              dateCreation: '2024-01-15', dateAttribution: '2024-05-10', dateDebutExecution: '2024-06-01', dateFinPrevue: '2025-12-31',
+              titulaire: 'BETA CONSTRUCTION', taux_avancement: 65, localite: 'Abidjan',
+              avenants: [
+                { id: 'A001', type: 'FINAN', montant: 50000000, motif: 'Augmentation matériaux' }
+              ],
+              reserve_cf: null
+            },
+            {
+              id: 'M002', code: 'M-2024-002', titre: 'Fourniture d\'équipements médicaux',
+              type: 'FOURN', unite: 'MIN-SANTE', etat: 'VISE', bailleur: 'ETAT',
+              montantAPM: 120000000, montantEngagement: 120000000, montantOrdonance: 0, montantPaiement: 0,
+              dateCreation: '2024-03-20', dateAttribution: '2024-08-15', dateDebutExecution: null, dateFinPrevue: '2025-06-30',
+              titulaire: 'MEDTECH SOLUTIONS', taux_avancement: 5, localite: 'Abidjan',
+              avenants: [],
+              reserve_cf: null
+            },
+            {
+              id: 'M003', code: 'M-2024-003', titre: 'Prestation d\'audit financier - 2024',
+              type: 'SERV', unite: 'DCF', etat: 'EXECUTION', bailleur: 'ETAT',
+              montantAPM: 25000000, montantEngagement: 25000000, montantOrdonance: 25000000, montantPaiement: 25000000,
+              dateCreation: '2024-02-10', dateAttribution: '2024-04-01', dateDebutExecution: '2024-04-05', dateFinPrevue: '2024-12-31',
+              titulaire: 'CABINET AUDIT PLUS', taux_avancement: 90, localite: 'Abidjan',
+              avenants: [],
+              reserve_cf: null
+            },
+            {
+              id: 'M004', code: 'M-2024-004', titre: 'Étude de faisabilité - Route Nationale 3',
+              type: 'PI', unite: 'DG-PLAN', etat: 'ATTRIBUE', bailleur: 'BAD',
+              montantAPM: 75000000, montantEngagement: 75000000, montantOrdonance: 0, montantPaiement: 0,
+              dateCreation: '2024-04-05', dateAttribution: '2024-09-20', dateDebutExecution: null, dateFinPrevue: '2025-09-30',
+              titulaire: 'INGENIERIE TRANSPORT', taux_avancement: 0, localite: 'Yamoussoukro',
+              avenants: [],
+              reserve_cf: 'Dossier incomplet'
+            },
+            {
+              id: 'M005', code: 'M-2024-005', titre: 'Maintenance informatique',
+              type: 'SERV', unite: 'DGBF', etat: 'PLANIFIE', bailleur: 'ETAT',
+              montantAPM: 30000000, montantEngagement: 0, montantOrdonance: 0, montantPaiement: 0,
+              dateCreation: '2024-10-01', dateAttribution: null, dateDebutExecution: null, dateFinPrevue: '2025-12-31',
+              titulaire: 'En sélection', taux_avancement: 0, localite: 'Abidjan',
+              avenants: [],
+              reserve_cf: null
+            }
+          ]);
+
+          const formatCurrency = (v) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', minimumFractionDigits: 0 }).format(v);
+          const formatDate = (d) => d ? new Intl.DateTimeFormat('fr-FR').format(new Date(d)) : '-';
+
+          const getRef = (ref, code) => parametrage[ref]?.find(r => r.code === code);
+          const getMarchesFiltrees = () => marches.filter(m => {
+            const matchSearch = !searchMarche || m.code.toLowerCase().includes(searchMarche.toLowerCase()) || m.titre.toLowerCase().includes(searchMarche.toLowerCase());
+            const matchEtat = !filterEtat || m.etat === filterEtat;
+            const matchType = !filterType || m.type === filterType;
+            const matchUnite = !filterUnite || m.unite === filterUnite;
+            const matchBailleur = !filterBailleur || m.bailleur === filterBailleur;
+            return matchSearch && matchEtat && matchType && matchUnite && matchBailleur;
+          });
+
+          const kpis = {
+            total: marches.length,
+            exe: marches.filter(m => m.etat === 'EXECUTION').length,
+            proc: marches.filter(m => m.etat === 'EN_PROC').length,
+            apm: marches.reduce((s, m) => s + m.montantAPM, 0),
+            eng: marches.reduce((s, m) => s + m.montantEngagement, 0),
+            ord: marches.reduce((s, m) => s + m.montantOrdonance, 0),
+            pay: marches.reduce((s, m) => s + m.montantPaiement, 0)
+          };
+
+          const marchesFiltrees = getMarchesFiltrees();
+
+          const LogoSIDCF = () => (
+            <div style={{ fontSize: '20px', fontWeight: 'bold' }}>
+              <span style={{ color: '#FF9500' }}>SI</span>
+              <span style={{ color: '#0D7377', marginLeft: '-3px' }}>D</span>
+              <span style={{ color: '#0D7377' }}>-CF</span>
+            </div>
+          );
+
+          const Header = () => (
+            <div style={{ backgroundColor: '#FFF', borderBottom: '1px solid #E5E7EB', padding: '16px 24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ padding: '8px', cursor: 'pointer', background: 'none', border: 'none', fontSize: '20px' }}>
+                    <Icon name="menu" />
+                  </button>
+                  <LogoSIDCF />
+                </div>
+                <div style={{ fontSize: '12px', color: '#666' }}>Admin • SI-DCF</div>
+              </div>
+            </div>
+          );
+
+          const Sidebar = () => (
+            <div style={{ 
+              position: sidebarOpen ? 'relative' : 'absolute',
+              width: '256px', 
+              height: '100vh', 
+              backgroundColor: '#0D7377', 
+              color: '#FFF',
+              padding: '24px',
+              overflowY: 'auto',
+              display: sidebarOpen ? 'block' : 'none'
+            }}>
+              <div style={{ marginBottom: '24px' }}>
+                <h3 style={{ fontSize: '10px', fontWeight: 'bold', color: '#A8D8D8', marginBottom: '12px', textTransform: 'uppercase' }}>Menu</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {[
+                    { name: 'home', label: 'Accueil', page: 'home' },
+                    { name: 'briefcase', label: 'Marchés', page: 'marches' },
+                    { name: 'chart', label: 'Dashboard', page: 'dashboard' },
+                    { name: 'file', label: 'Exécution', page: 'execution' }
+                  ].map(item => (
+                    <button
+                      key={item.page}
+                      onClick={() => { setCurrentPage(item.page); setSidebarOpen(false); }}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        backgroundColor: currentPage === item.page ? '#06494E' : 'transparent',
+                        color: '#FFF',
+                        border: 'none',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontSize: '13px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px'
+                      }}
+                    >
+                      <Icon name={item.name} /> {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: '16px' }}>
+                <h3 style={{ fontSize: '10px', fontWeight: 'bold', color: '#A8D8D8', marginBottom: '12px', textTransform: 'uppercase' }}>Admin</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {[
+                    { name: 'settings', label: 'Paramètres', page: 'parametrage' },
+                    { name: 'alert', label: 'Règles', page: 'regles' }
+                  ].map(item => (
+                    <button
+                      key={item.page}
+                      onClick={() => { setCurrentPage(item.page); setSidebarOpen(false); }}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        backgroundColor: currentPage === item.page ? '#06494E' : 'transparent',
+                        color: '#FFF',
+                        border: 'none',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontSize: '13px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px'
+                      }}
+                    >
+                      <Icon name={item.name} /> {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+
+          const KPICard = ({ icon, titre, valeur, sous }) => (
+            <div style={{ backgroundColor: '#FFF', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ color: '#666', fontSize: '12px', fontWeight: '500' }}>{titre}</span>
+                <span style={{ fontSize: '18px' }}><Icon name={icon} /></span>
+              </div>
+              <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#0D7377', marginBottom: '4px' }}>{valeur}</div>
+              {sous && <div style={{ fontSize: '12px', color: '#999' }}>{sous}</div>}
+            </div>
+          );
+
+          const PageAccueil = () => (
+            <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px' }}>
+              <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: '#111', marginBottom: '8px' }}>Bienvenue dans SI-DCF</h1>
+              <p style={{ color: '#666', marginBottom: '32px' }}>Système d'Information Décisionnel du Contrôle Financier - Module Marché</p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px' }}>
+                <KPICard icon="briefcase" titre="Marchés actifs" valeur={kpis.total} />
+                <KPICard icon="trending" titre="En exécution" valeur={kpis.exe} />
+                <KPICard icon="dollar" titre="Montant APM" valeur={formatCurrency(kpis.apm)} sous="FCFA" />
+                <KPICard icon="clock" titre="Taux exécution" valeur={`${Math.round((kpis.pay/kpis.apm)*100)}%`} />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                <div style={{ backgroundColor: '#FFF', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '24px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#111', marginBottom: '16px' }}>Accès rapides</h3>
+                  {[
+                    { label: 'Gestion des Marchés', page: 'marches' },
+                    { label: 'Tableau de Bord', page: 'dashboard' },
+                    { label: 'Paramétrages', page: 'parametrage' }
+                  ].map(item => (
+                    <button
+                      key={item.page}
+                      onClick={() => setCurrentPage(item.page)}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '12px',
+                        marginBottom: '8px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        backgroundColor: '#F9FAFB',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        color: '#111'
+                      }}
+                      onMouseEnter={e => e.target.style.backgroundColor = '#F3F4F6'}
+                      onMouseLeave={e => e.target.style.backgroundColor = '#F9FAFB'}
+                    >
+                      <span style={{ fontWeight: '500' }}>{item.label}</span>
+                      <span><Icon name="chevron-right" /></span>
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ backgroundColor: '#F0F9FF', borderRadius: '8px', border: '1px solid #BFE7FF', padding: '24px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#003D82', marginBottom: '12px' }}>ℹ️ Info Système</h3>
+                  <ul style={{ fontSize: '13px', color: '#003D82', lineHeight: '1.8' }}>
+                    <li>✓ {marchesFiltrees.length} marchés paramétrés</li>
+                    <li>✓ {parametrage.unites.length} unités actives</li>
+                    <li>✓ {parametrage.bailleurs.length} bailleurs configurés</li>
+                    <li>✓ {Object.keys(parametrage.reglesGestion).length} règles actives</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          );
+
+          const PageDashboard = () => (
+            <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px' }}>
+              <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#111', marginBottom: '24px' }}>Tableau de Bord</h1>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+                <KPICard icon="briefcase" titre="Total" valeur={kpis.total} />
+                <KPICard icon="trending" titre="Exécution" valeur={kpis.exe} />
+                <KPICard icon="alert" titre="Procédure" valeur={kpis.proc} />
+                <KPICard icon="dollar" titre="Montant APM" valeur={formatCurrency(kpis.apm)} sous="FCFA" />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+                <div style={{ backgroundColor: '#FFF', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#0D7377' }}></div>
+                    <span style={{ fontSize: '12px', fontWeight: '500', color: '#666' }}>APM PRÉVUE</span>
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#0D7377' }}>{formatCurrency(kpis.apm)}</div>
+                  <div style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>100%</div>
+                </div>
+
+                <div style={{ backgroundColor: '#FFF', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#2563EB' }}></div>
+                    <span style={{ fontSize: '12px', fontWeight: '500', color: '#666' }}>ENGAGÉE</span>
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1E40AF' }}>{formatCurrency(kpis.eng)}</div>
+                  <div style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>{Math.round((kpis.eng/kpis.apm)*100)}%</div>
+                </div>
+
+                <div style={{ backgroundColor: '#FFF', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#EABA00' }}></div>
+                    <span style={{ fontSize: '12px', fontWeight: '500', color: '#666' }}>ORDONANCÉE</span>
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#92400E' }}>{formatCurrency(kpis.ord)}</div>
+                  <div style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>{Math.round((kpis.ord/kpis.apm)*100)}%</div>
+                </div>
+
+                <div style={{ backgroundColor: '#FFF', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#16A34A' }}></div>
+                    <span style={{ fontSize: '12px', fontWeight: '500', color: '#666' }}>PAYÉE</span>
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#15803D' }}>{formatCurrency(kpis.pay)}</div>
+                  <div style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>{Math.round((kpis.pay/kpis.apm)*100)}%</div>
+                </div>
+              </div>
+
+              <div style={{ backgroundColor: '#FFF', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '24px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#111', marginBottom: '16px' }}>Distribution par État</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '12px' }}>
+                  {parametrage.etatsMarche.map(etat => {
+                    const count = marches.filter(m => m.etat === etat.code).length;
+                    return (
+                      <div key={etat.code} style={{ backgroundColor: '#FFF', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '12px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '11px', fontWeight: '500', color: '#666', marginBottom: '8px' }}>{etat.libelle}</div>
+                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: etat.txtColor, backgroundColor: etat.couleur, borderRadius: '4px', padding: '4px' }}>{count}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+
+          const PageMarches = () => (
+            <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#111' }}>Gestion des Marchés</h1>
+                <button style={{ backgroundColor: '#0D7377', color: '#FFF', padding: '8px 16px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: '500' }}>
+                  <Icon name="plus" /> Nouveau marché
+                </button>
+              </div>
+
+              {/* Filtres */}
+              <div style={{ backgroundColor: '#FFF', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '16px', marginBottom: '24px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#666', marginBottom: '8px' }}>Recherche</label>
+                    <input
+                      type="text"
+                      placeholder="Code ou titre..."
+                      value={searchMarche}
+                      onChange={(e) => setSearchMarche(e.target.value)}
+                      style={{ width: '100%', padding: '8px 12px', border: '1px solid #D1D5DB', borderRadius: '6px', fontSize: '12px' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#666', marginBottom: '8px' }}>État</label>
+                    <select value={filterEtat} onChange={(e) => setFilterEtat(e.target.value)} style={{ width: '100%', padding: '8px 12px', border: '1px solid #D1D5DB', borderRadius: '6px', fontSize: '12px' }}>
+                      <option value="">Tous</option>
+                      {parametrage.etatsMarche.map(e => <option key={e.code} value={e.code}>{e.libelle}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#666', marginBottom: '8px' }}>Type</label>
+                    <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{ width: '100%', padding: '8px 12px', border: '1px solid #D1D5DB', borderRadius: '6px', fontSize: '12px' }}>
+                      <option value="">Tous</option>
+                      {parametrage.typesMarchés.map(t => <option key={t.code} value={t.code}>{t.libelle}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#666', marginBottom: '8px' }}>Unité</label>
+                    <select value={filterUnite} onChange={(e) => setFilterUnite(e.target.value)} style={{ width: '100%', padding: '8px 12px', border: '1px solid #D1D5DB', borderRadius: '6px', fontSize: '12px' }}>
+                      <option value="">Tous</option>
+                      {parametrage.unites.map(u => <option key={u.code} value={u.code}>{u.libelle}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '600', color: '#666', marginBottom: '8px' }}>Bailleur</label>
+                    <select value={filterBailleur} onChange={(e) => setFilterBailleur(e.target.value)} style={{ width: '100%', padding: '8px 12px', border: '1px solid #D1D5DB', borderRadius: '6px', fontSize: '12px' }}>
+                      <option value="">Tous</option>
+                      {parametrage.bailleurs.map(b => <option key={b.code} value={b.code}>{b.libelle}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                    <button style={{ width: '100%', backgroundColor: '#F0FDFB', color: '#0D7377', padding: '8px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', cursor: 'pointer', fontWeight: '500', fontSize: '12px' }}>
+                      <Icon name="download" /> Export
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ fontSize: '12px', color: '#666', marginBottom: '12px' }}>
+                {marchesFiltrees.length} marché(s) trouvé(s)
+              </div>
+
+              {/* Tableau */}
+              <div style={{ backgroundColor: '#FFF', borderRadius: '8px', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead style={{ backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
+                    <tr>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#374151' }}>Code</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#374151' }}>Titre</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#374151' }}>Type</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#374151' }}>État</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'right', fontSize: '12px', fontWeight: '600', color: '#374151' }}>Montant</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '12px', fontWeight: '600', color: '#374151' }}>Avance</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '12px', fontWeight: '600', color: '#374151' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {marchesFiltrees.map(m => {
+                      const etat = getRef('etatsMarche', m.etat);
+                      return (
+                        <tr key={m.id} style={{ borderBottom: '1px solid #F3F4F6' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F9FAFB'} onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FFF'}>
+                          <td style={{ padding: '12px 16px', fontSize: '12px', fontWeight: '500', color: '#0D7377', cursor: 'pointer' }}>{m.code}</td>
+                          <td style={{ padding: '12px 16px', fontSize: '12px', color: '#111', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.titre}</td>
+                          <td style={{ padding: '12px 16px', fontSize: '12px', color: '#666' }}>{getRef('typesMarchés', m.type)?.libelle}</td>
+                          <td style={{ padding: '12px 16px', fontSize: '12px' }}>
+                            <span style={{ backgroundColor: etat.couleur, color: etat.txtColor, padding: '4px 8px', borderRadius: '4px', fontWeight: '500', fontSize: '11px' }}>
+                              {etat.libelle}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px 16px', fontSize: '12px', fontWeight: '500', color: '#111', textAlign: 'right' }}>{formatCurrency(m.montantAPM)}</td>
+                          <td style={{ padding: '12px 16px', fontSize: '12px', textAlign: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                              <div style={{ width: '60px', height: '4px', backgroundColor: '#E5E7EB', borderRadius: '2px', overflow: 'hidden' }}>
+                                <div style={{ width: `${m.taux_avancement}%`, height: '100%', backgroundColor: '#0D7377' }} />
+                              </div>
+                              <span style={{ fontSize: '11px', fontWeight: '600', color: '#666', minWidth: '24px', textAlign: 'right' }}>{m.taux_avancement}%</span>
+                            </div>
+                          </td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                            <button
+                              onClick={() => setSelectedMarche(m)}
+                              style={{ backgroundColor: 'transparent', border: 'none', cursor: 'pointer', color: '#0D7377', fontWeight: '500', fontSize: '12px' }}
+                            >
+                              <Icon name="eye" /> Détail
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+
+          const PageDetailMarche = () => {
+            const m = selectedMarche;
+            if (!m) return null;
+            const etat = getRef('etatsMarche', m.etat);
+            return (
+              <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px' }}>
+                <button
+                  onClick={() => setSelectedMarche(null)}
+                  style={{ marginBottom: '24px', backgroundColor: 'transparent', border: 'none', color: '#0D7377', cursor: 'pointer', fontSize: '13px', fontWeight: '500' }}
+                >
+                  <Icon name="arrow-left" /> Retour à la liste
+                </button>
+
+                <div style={{ backgroundColor: '#FFF', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '24px', marginBottom: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
+                    <div>
+                      <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#111' }}>{m.titre}</h1>
+                      <p style={{ color: '#666', fontSize: '13px', marginTop: '4px' }}>{m.code}</p>
+                    </div>
+                    <span style={{ backgroundColor: etat.couleur, color: etat.txtColor, padding: '8px 12px', borderRadius: '6px', fontWeight: '600', fontSize: '12px' }}>
+                      {etat.libelle}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+                  <div style={{ backgroundColor: '#FFF', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '24px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#111', marginBottom: '16px' }}>Informations</h3>
+                    <div style={{ fontSize: '13px', lineHeight: '2' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#666' }}>Type :</span>
+                        <strong>{getRef('typesMarchés', m.type)?.libelle}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#666' }}>Unité :</span>
+                        <strong>{getRef('unites', m.unite)?.libelle}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#666' }}>Bailleur :</span>
+                        <strong>{getRef('bailleurs', m.bailleur)?.libelle}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#666' }}>Titulaire :</span>
+                        <strong>{m.titulaire}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ backgroundColor: '#FFF', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '24px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#111', marginBottom: '16px' }}>Montants (FCFA)</h3>
+                    <div style={{ fontSize: '13px', lineHeight: '2' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #E5E7EB' }}>
+                        <span style={{ color: '#666' }}>APM :</span>
+                        <strong style={{ color: '#0D7377' }}>{formatCurrency(m.montantAPM)}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #E5E7EB' }}>
+                        <span style={{ color: '#666' }}>Engagé :</span>
+                        <strong>{formatCurrency(m.montantEngagement)}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #E5E7EB' }}>
+                        <span style={{ color: '#666' }}>Ordonancé :</span>
+                        <strong>{formatCurrency(m.montantOrdonance)}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#666' }}>Payé :</span>
+                        <strong>{formatCurrency(m.montantPaiement)}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ backgroundColor: '#FFF', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '24px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#111', marginBottom: '16px' }}>Calendrier</h3>
+                    <div style={{ fontSize: '13px', lineHeight: '2' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#666' }}>Création :</span>
+                        <strong>{formatDate(m.dateCreation)}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#666' }}>Attribution :</span>
+                        <strong>{formatDate(m.dateAttribution)}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#666' }}>Fin prévue :</span>
+                        <strong>{formatDate(m.dateFinPrevue)}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ backgroundColor: '#FFF', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '24px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#111', marginBottom: '16px' }}>Avancement</h3>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '13px', color: '#666' }}>Taux d'avancement</span>
+                        <strong style={{ fontSize: '18px', color: '#0D7377' }}>{m.taux_avancement}%</strong>
+                      </div>
+                      <div style={{ width: '100%', height: '12px', backgroundColor: '#E5E7EB', borderRadius: '6px', overflow: 'hidden' }}>
+                        <div style={{ width: `${m.taux_avancement}%`, height: '100%', backgroundColor: '#0D7377' }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {m.avenants.length > 0 && (
+                  <div style={{ backgroundColor: '#FFF', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '24px', marginBottom: '24px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#111', marginBottom: '16px' }}>Avenants ({m.avenants.length})</h3>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                      <thead style={{ backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
+                        <tr>
+                          <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '600' }}>ID</th>
+                          <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '600' }}>Type</th>
+                          <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '600' }}>Motif</th>
+                          <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: '600' }}>Montant</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {m.avenants.map(av => (
+                          <tr key={av.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
+                            <td style={{ padding: '8px 12px', fontWeight: '600', color: '#0D7377' }}>{av.id}</td>
+                            <td style={{ padding: '8px 12px' }}>{av.type}</td>
+                            <td style={{ padding: '8px 12px' }}>{av.motif}</td>
+                            <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: '600' }}>{av.montant > 0 ? '+' + formatCurrency(av.montant) : '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {m.reserve_cf && (
+                  <div style={{ backgroundColor: '#FEF2F2', borderRadius: '8px', border: '1px solid #FEE2E2', padding: '16px' }}>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <span style={{ fontSize: '18px' }}><Icon name="alert" /></span>
+                      <div>
+                        <div style={{ fontWeight: '600', color: '#991B1B', fontSize: '13px', marginBottom: '4px' }}>Réserve CF</div>
+                        <div style={{ color: '#7F1D1D', fontSize: '12px' }}>{m.reserve_cf}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          };
+
+          const PageExecution = () => (
+            <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px' }}>
+              <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#111', marginBottom: '24px' }}>Suivi Exécution & Avenants</h1>
+
+              <div style={{ backgroundColor: '#FFF', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '24px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#111', marginBottom: '16px' }}>Marchés en Exécution</h3>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                  <thead style={{ backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
+                    <tr>
+                      <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '600' }}>Code</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: '600' }}>Titre</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'center', fontWeight: '600' }}>Avancement</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: '600' }}>Montant Payé</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: '600' }}>Avenants</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {marches.filter(m => m.etat === 'EXECUTION').map(m => (
+                      <tr key={m.id} style={{ borderBottom: '1px solid #F3F4F6' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F9FAFB'} onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FFF'}>
+                        <td style={{ padding: '8px 12px', fontWeight: '600', color: '#0D7377', cursor: 'pointer' }} onClick={() => setSelectedMarche(m)}>{m.code}</td>
+                        <td style={{ padding: '8px 12px' }}>{m.titre}</td>
+                        <td style={{ padding: '8px 12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                            <div style={{ width: '60px', height: '4px', backgroundColor: '#E5E7EB', borderRadius: '2px', overflow: 'hidden' }}>
+                              <div style={{ width: `${m.taux_avancement}%`, height: '100%', backgroundColor: '#0D7377' }} />
+                            </div>
+                            <span style={{ fontWeight: '600', minWidth: '24px', textAlign: 'right' }}>{m.taux_avancement}%</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: '600' }}>{formatCurrency(m.montantPaiement)}</td>
+                        <td style={{ padding: '8px 12px', textAlign: 'right' }}>
+                          {m.avenants.length > 0 ? (
+                            <span style={{ backgroundColor: '#FEF08A', color: '#855C00', padding: '2px 6px', borderRadius: '3px', fontWeight: '600', fontSize: '11px' }}>
+                              <Icon name="alert" /> {m.avenants.length}
+                            </span>
+                          ) : (
+                            <span style={{ color: '#D1D5DB' }}>-</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+
+          const PageParametrage = () => (
+            <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px' }}>
+              <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#111', marginBottom: '24px' }}>Paramétrages</h1>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
+                <div style={{ backgroundColor: '#FFF', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '24px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#111', marginBottom: '12px' }}>Unités</h3>
+                  <div style={{ space: '8px' }}>
+                    {parametrage.unites.map(u => (
+                      <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #E5E7EB', background: '#F9FAFB' }}>
+                        <div>
+                          <div style={{ fontWeight: '600', fontSize: '13px', color: '#111' }}>{u.code}</div>
+                          <div style={{ fontSize: '11px', color: '#666' }}>{u.libelle}</div>
+                        </div>
+                        <input type="checkbox" defaultChecked={u.actif} style={{ cursor: 'pointer' }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ backgroundColor: '#FFF', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '24px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#111', marginBottom: '12px' }}>Types de Marchés</h3>
+                  <div>
+                    {parametrage.typesMarchés.map(t => (
+                      <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #E5E7EB', background: '#F9FAFB' }}>
+                        <div>
+                          <div style={{ fontWeight: '600', fontSize: '13px', color: '#111' }}>{t.code}</div>
+                          <div style={{ fontSize: '11px', color: '#666' }}>{t.libelle}</div>
+                        </div>
+                        <input type="checkbox" defaultChecked={t.actif} style={{ cursor: 'pointer' }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ backgroundColor: '#FFF', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '24px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#111', marginBottom: '12px' }}>Modes de Passation</h3>
+                  <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                    {parametrage.modePassation.map(m => (
+                      <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #E5E7EB', background: '#F9FAFB' }}>
+                        <div>
+                          <div style={{ fontWeight: '600', fontSize: '13px', color: '#111' }}>{m.code}</div>
+                          <div style={{ fontSize: '11px', color: '#666' }}>{m.libelle}</div>
+                        </div>
+                        <input type="checkbox" defaultChecked={m.actif} style={{ cursor: 'pointer' }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ backgroundColor: '#FFF', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '24px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#111', marginBottom: '12px' }}>Bailleurs</h3>
+                  <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                    {parametrage.bailleurs.map(b => (
+                      <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #E5E7EB', background: '#F9FAFB' }}>
+                        <div>
+                          <div style={{ fontWeight: '600', fontSize: '13px', color: '#111' }}>{b.code}</div>
+                          <div style={{ fontSize: '11px', color: '#666' }}>{b.libelle}</div>
+                        </div>
+                        <input type="checkbox" defaultChecked={b.actif} style={{ cursor: 'pointer' }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+
+          const PageRegles = () => (
+            <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px' }}>
+              <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#111', marginBottom: '24px' }}>Règles de Gestion</h1>
+
+              <div style={{ backgroundColor: '#F0F9FF', borderRadius: '8px', border: '1px solid #BFE7FF', padding: '16px', marginBottom: '24px', display: 'flex', gap: '12px' }}>
+                <span style={{ fontSize: '18px' }}><Icon name="info" /></span>
+                <div>
+                  <div style={{ fontWeight: '600', color: '#003D82', fontSize: '13px', marginBottom: '4px' }}>À propos des règles de gestion</div>
+                  <div style={{ color: '#003D82', fontSize: '12px' }}>
+                    Les règles de gestion définissent les conditions et seuils qui s'appliquent lors de la création ou modification des marchés.
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
+                {Object.entries(parametrage.reglesGestion).map(([key, rule]) => (
+                  <div key={key} style={{ backgroundColor: '#F9FAFB', borderRadius: '8px', border: '1px solid #E5E7EB', padding: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
+                      <div>
+                        <div style={{ fontWeight: '600', color: '#111', fontSize: '13px' }}>{rule.desc}</div>
+                        <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>Code: {key}</div>
+                      </div>
+                      <span style={{ backgroundColor: rule.sev === 'BLOCANT' ? '#FEE2E2' : '#FEF3C7', color: rule.sev === 'BLOCANT' ? '#991B1B' : '#92400E', padding: '4px 8px', borderRadius: '3px', fontSize: '11px', fontWeight: '600' }}>
+                        {rule.sev}
+                      </span>
+                    </div>
+                    <div style={{ backgroundColor: '#FFF', borderRadius: '6px', padding: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ color: '#666', fontSize: '12px' }}>Valeur :</span>
+                      <input type="number" defaultValue={rule.val} style={{ flex: 1, padding: '6px 8px', border: '1px solid #D1D5DB', borderRadius: '4px', fontSize: '12px' }} />
+                      <span style={{ color: '#666', fontSize: '12px' }}>
+                        {key.includes('taux') ? '%' : key.includes('delai') ? 'jours' : ''}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                <button style={{ padding: '8px 16px', border: '1px solid #D1D5DB', borderRadius: '6px', backgroundColor: '#FFF', cursor: 'pointer', fontWeight: '500', fontSize: '13px' }}>
+                  Annuler
+                </button>
+                <button style={{ padding: '8px 16px', backgroundColor: '#0D7377', color: '#FFF', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: '500', fontSize: '13px' }}>
+                  Enregistrer
+                </button>
+              </div>
+            </div>
+          );
+
+          return (
+            <div style={{ display: 'flex', height: '100vh', backgroundColor: '#F3F4F6' }}>
+              <Sidebar />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <Header />
+                <div style={{ flex: 1, overflowY: 'auto', backgroundColor: '#F3F4F6' }}>
+                  {selectedMarche ? (
+                    <PageDetailMarche />
+                  ) : currentPage === 'home' ? (
+                    <PageAccueil />
+                  ) : currentPage === 'dashboard' ? (
+                    <PageDashboard />
+                  ) : currentPage === 'marches' ? (
+                    <PageMarches />
+                  ) : currentPage === 'execution' ? (
+                    <PageExecution />
+                  ) : currentPage === 'parametrage' ? (
+                    <PageParametrage />
+                  ) : currentPage === 'regles' ? (
+                    <PageRegles />
+                  ) : (
+                    <PageAccueil />
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<SIDCFModule />);
+      </script>
+    </body>
+</html>
